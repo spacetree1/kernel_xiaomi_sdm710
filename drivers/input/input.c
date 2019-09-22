@@ -47,7 +47,6 @@ static LIST_HEAD(input_handler_list);
  * input handlers.
  */
 static DEFINE_MUTEX(input_mutex);
-
 static const struct input_value input_value_sync = { EV_SYN, SYN_REPORT, 1 };
 
 static inline int is_event_supported(unsigned int code,
@@ -2183,6 +2182,7 @@ EXPORT_SYMBOL(input_register_device);
  */
 void input_unregister_device(struct input_dev *dev)
 {
+
 	if (dev->devres_managed) {
 		WARN_ON(devres_destroy(dev->dev.parent,
 					devm_input_device_unregister,
