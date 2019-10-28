@@ -2810,44 +2810,20 @@ out:
 
 static int fg_get_cycle_count(struct fg_chip *chip)
 {
-	int count = 0;
-	int i = 0;
+	int i, len = 0;
 
 	if (!chip->cyc_ctr.en)
 		return 0;
 
-	if ((chip->cyc_ctr.id <= 0) || (chip->cyc_ctr.id > BUCKET_COUNT))
-		return -EINVAL;
-
 	mutex_lock(&chip->cyc_ctr.lock);
 	for (i = 0; i < BUCKET_COUNT; i++)
-		count += chip->cyc_ctr.count[i];
-	count /= BUCKET_COUNT;
+		len += chip->cyc_ctr.count[i];
+
 	mutex_unlock(&chip->cyc_ctr.lock);
 
-	return count;
-}
+	len = len / BUCKET_COUNT;
 
-static int fg_set_cycle_count(struct fg_chip *chip, int value)
-{
-	int rc = 0;
-	int i = 0;
-	u8 data[2];
-
-	for (i = 0; i < BUCKET_COUNT; i++) {
-		data[0] = value & 0xFF;
-		data[1] = value >> 8;
-
-		rc = fg_sram_write(chip, CYCLE_COUNT_WORD + (i / 2),
-				CYCLE_COUNT_OFFSET + (i % 2) * 2, data, 2,
-				FG_IMA_DEFAULT);
-		if (rc < 0)
-			pr_err("failed to write BATT_CYCLE[%d] rc=%d\n", i, rc);
-		else
-			chip->cyc_ctr.count[i] = value;
-	}
-
-	return rc;
+	return len;
 }
 
 static const char *fg_get_cycle_counts(struct fg_chip *chip)
@@ -2875,6 +2851,27 @@ static const char *fg_get_cycle_counts(struct fg_chip *chip)
 	return buf;
 }
 
+static int fg_set_cycle_count(struct fg_chip *chip, int value)
+{
+        int rc = 0;
+        int i = 0;
+        u8 data[2];
+
+        for(i = 0; i < BUCKET_COUNT; i++) {
+                data[0] = value & 0xFF;
+                data[1] = value >> 8;
+
+                rc = fg_sram_write(chip, CYCLE_COUNT_WORD + (i / 2),
+                                CYCLE_COUNT_OFFSET + (i % 2) * 2, data, 2,
+                                FG_IMA_DEFAULT);
+                if (rc < 0)
+                        pr_err("failed to write BATT_CYCLE[%d] rc=%d\n",
+                                i, rc);
+                else
+                        chip->cyc_ctr.count[i] = value;
+        }
+        return rc;
+}
 #define ESR_SW_FCC_UA				100000	/* 100mA */
 #define ESR_EXTRACTION_ENABLE_MASK		BIT(0)
 static void fg_esr_sw_work(struct work_struct *work)
